@@ -27,7 +27,7 @@ class JsonFormatter(logging.Formatter):
     
     
     
-    def format(self, record, rules=None):
+    def format(self, record):
         extra = self.build_record(record)
         self.set_format_time(extra)
 
@@ -43,7 +43,8 @@ class JsonFormatter(logging.Formatter):
         print(formatted)
         # exit()
         # return formatted
-        return json.dumps(formatted, indent=1, ensure_ascii=False)
+        # return json.dumps(formatted, indent=1, ensure_ascii=False)
+        return json.dumps(formatted, ensure_ascii=False)
         
     @classmethod
     def set_format_time(cls, extra):
