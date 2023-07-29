@@ -9,3 +9,8 @@ implement it. But there is a prerequisite here: the *line* you enter must be thi
 <center class="half">
     <img src="../../figures/demo_topo_constr/inputskeleton.png" width="200" title="input"><img src="../../figures/demo_topo_constr/outputpoint_cov.png" width="200" title="output">
 </center>
+
+
+Solarized dark             |  Solarized Ocean
+:-------------------------:|:-------------------------:
+![](../../figures/demo_topo_constr/inputskeleton.png)  |  ![](../../figures/demo_topo_constr/outputpoint_cov.png)
