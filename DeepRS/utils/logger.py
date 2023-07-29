@@ -73,11 +73,15 @@ if __name__ == "__main__":
     
     l = logging.getLogger()
     
+    
+    
     l.setLevel(logging.DEBUG)
     
     handler = logging.StreamHandler()    
     handler.setLevel(logging.INFO)
     handler.setFormatter(JsonFormatter())
+    
+    
     
     l.addHandler(handler)
     
