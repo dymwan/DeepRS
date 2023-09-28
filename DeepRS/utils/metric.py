@@ -104,8 +104,8 @@ class RS_SegmentationMetric(object):
         
         self.roc_precision = roc_precision
         
-        self.p_score_count = torch.zeros(self.roc_precision, dtype=torch.int64).to(device)
-        self.n_score_count = torch.zeros(self.roc_precision, dtype=torch.int64).to(device)
+        self.p_score_count = torch.zeros(self.roc_precision+1, dtype=torch.int64).to(device)
+        self.n_score_count = torch.zeros(self.roc_precision+1, dtype=torch.int64).to(device)
         
         #----------------------------------------------------------------------
         # for binary cal
@@ -152,12 +152,15 @@ class RS_SegmentationMetric(object):
         
         self.mIoU = self.IoU.mean()
         
+        print(self.cm)
+        
         return  self.total_pixAcc, self.pixAcc, self.mIoU, self.IoU, self.AUC, \
                 self.total_recall, self.recall, self.total_precision, \
                 self.precision, self.total_F1, self.F1
         
     
     def _getNPTF(self, input_cm=None):
+        # confusion matrix follow the shaping format: [ ref, pred ]
         if input_cm is None:
             cm = self.cm
         else:
@@ -184,6 +187,8 @@ class RS_SegmentationMetric(object):
             
         assert cm is not None, 'Got a empty Confusion matrix'
                
+        total_pix = torch.sum(self.cm)
+        
         clslist = list(range(cm.shape[0]))
         
         for i in clslist:
@@ -207,8 +212,8 @@ class RS_SegmentationMetric(object):
             self.IoU[i] = self.TP[i] / _der_IoU if _der_IoU > 0 \
                 else 0
             
-            self.pixAcc[i] = (
-                self.TP[i] + self.TN[i]) / (self.TP[i] + self.TN[i] + self.FP[i] + self.TN[i])
+            # self.pixAcc[i] = self.TP[i]/ (self.TP[i] + self.TN[i] + self.FP[i] + self.TN[i])
+            self.pixAcc[i] = self.TP[i]/ total_pix
         
     def _get_total_metric(self):
         
@@ -322,20 +327,23 @@ def batch_positive_score_seg(output, target, mode=-1, precision=100):
     """
     
     if mode == -1:
-        output_score = 1 - output[:, 0, :, :]
+        output_neg_score = output[:, 0, :, :]
+        output_score = 1 - output_neg_score
         positive_mask = target != 0
     else:
         output_score = output[:, mode, :, :]
+        output_neg_score = 1 - output_score
         positive_mask = target == mode
 
     output_score = (output_score * precision).long()
+    output_neg_score = (output_neg_score * precision).long()
     
     positive_score_count = torch.bincount(
-        output_score[positive_mask], minlength=precision
+        output_score[positive_mask], minlength=precision+1
     )
     
     negative_score_count = torch.bincount(
-        output_score[~positive_mask], minlength=precision
+        output_neg_score[~positive_mask], minlength=precision+1
     )
     
     # print(positive_score_count.shape, negative_score_count.shape)
