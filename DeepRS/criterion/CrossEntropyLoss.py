@@ -1,10 +1,31 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .criterion_utils import compute_weight_from_label_2D
 from .ohem import OHEM
+
+
+
+def Cross_Entropy(target, input, weight:Union[str, List]=None, ohem_filter=None, ignore_index=None):
+    if ohem_filter is not None:
+        target = ohem_filter(input, target, ignore_index)
+    
+    if weight is None:
+        ce_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
+    elif isinstance(weight, list):
+        ce_loss = nn.CrossEntropyLoss(
+            weight=weight, ignore_index=ignore_index
+        )
+    elif weight == 'auto':
+        batch_weight = compute_weight_from_label_2D(target)
+        ce_loss = nn.CrossEntropyLoss(
+            weight=batch_weight, ignore_index=ignore_index)
+
+    ce_loss = ce_loss.forward(input, target)
+    return ce_loss
+
 
 class Cross_Entropy_Loss(nn.Module):
     
@@ -15,7 +36,7 @@ class Cross_Entropy_Loss(nn.Module):
     
     ce_loss = None #Key executor
     
-    _ohem   = None
+    ohem   = None
     
     def __init__(self, cfg) -> None:
         super(Cross_Entropy_Loss, self).__init__()
@@ -45,7 +66,7 @@ class Cross_Entropy_Loss(nn.Module):
         self.OHEM_KEEP = cfg.LOSS.OHEM.KEEP
         
         if self.OHEM_MDOE:
-            self._ohem = OHEM(cfg)
+            self.ohem = OHEM(cfg)
         
         
     
@@ -57,15 +78,13 @@ class Cross_Entropy_Loss(nn.Module):
         loss = 0
         
         if self.OHEM_MODE:
-            target = self._ohem.filter(pred, target, self.IGNORE_INDEX)
+            target = self.ohem.filter(pred, target, self.IGNORE_INDEX)
         
         if self.AUTO_WEIGHT:
             batch_weight = compute_weight_from_label_2D(target)
             self.ce_loss = nn.CrossEntropyLoss(
                 weight=batch_weight, ignore_index=self.IGNORE_INDEX)
         
-        
-        #TODO
         ce_loss = self.ce_loss.forward(pred, target)
         
         loss += ce_loss
